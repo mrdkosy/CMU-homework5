@@ -1,8 +1,10 @@
 var ctracker;
 var videoInput;
 var Graphics, FinalGraphics;
-var shader, program, randomPoints;
+var shader, program, randomPoints, fade, nosePoint;
 var realColorImage;
+
+var slider;
 
 function setup() {
   
@@ -22,18 +24,18 @@ function setup() {
   ctracker.init(pModel);
   ctracker.start(videoInput.elt);
 
+  //その他
   noStroke();
-
-  //pixelDensity(1);
   Graphics = createGraphics(800, 600);
   FinalGraphics = createGraphics(600, 600);
+
 
   //shader
   shader = createGraphics(600, 600, WEBGL);
   program = shader.createShader(vert, frag);
   shader.noStroke();
   //voronoiのポイントとなる点
-  randomPoints = createGraphics(30, 30);
+  randomPoints = createGraphics(20, 20);
   randomPoints.noStroke();
   randomPoints.fill(255, 0, 0);
   randomPoints.rect(0, 0, randomPoints.width, randomPoints.height);
@@ -42,13 +44,17 @@ function setup() {
   var d = randomPoints.pixelDensity();
   var size = 4 * (randomPoints.width * d) * (randomPoints.height * d);
   for (var i = 0; i < size; i += 4) {
-    randomPoints.pixels[i] = random(255);
-    randomPoints.pixels[i + 1] = random(255);
+    randomPoints.pixels[i] = random(0, 255);
+    randomPoints.pixels[i + 1] = random(0, 255);
     randomPoints.pixels[i + 2] = 0;//blue(c);
     randomPoints.pixels[i + 3] = 255;
   }
   randomPoints.updatePixels();
+  nosePoint = createVector(0,0);
 
+  //slider 
+  slider = createSlider(0, 100, 0);
+  slider.position(650, 20);
 }
 
 function draw() {
@@ -92,7 +98,7 @@ function draw() {
 
 
   FinalGraphics.push();
-  FinalGraphics.image(Graphics, -200, 0);
+  FinalGraphics.image(Graphics, -100, 0);
   FinalGraphics.pop();
   //image(FinalGraphics,0,0);
 
@@ -105,6 +111,9 @@ function draw() {
   program.setUniform('time', 1);
   program.setUniform('image0', FinalGraphics);
   program.setUniform('randomPoints', randomPoints);
+  fade = slider.value()/100;
+  program.setUniform('fade', fade);
+  program.setUniform('nodePoint'[nosePoint.x, nosePoint.y]);
   shader.rect(-shader.width/2 ,-shader.height/2, shader.width, shader.height);
 
   image(shader, 0, 0);
@@ -119,11 +128,9 @@ var lowerLip = [44, 56, 57, 58, 50, 51, 52, 53, 54, 55, 44];
 後から実装するもの
 ・ビデオイメージからの色取得
 ・笑ったアクション取得
-・できたらvoronoi
 ・歯の色取得
+ - voronoi
 
-画像切り抜き
-https://p5js.org/reference/#/p5/get
 
 グリッチ
 https://www.shadertoy.com/view/XstXD2
@@ -173,6 +180,8 @@ uniform vec2 resolution;
 uniform float time;
 uniform sampler2D image0;
 uniform sampler2D randomPoints;
+uniform float fade;
+uniform vec2 nodePoint;
 
 void main(void)
 {
@@ -185,18 +194,21 @@ void main(void)
   vec4 color = vec4(1.0);
 
   float dist = 1e10;
-  for(int y=0; y<30; y++){
-    for(int x=0; x<30; x++){
-      vec2 index = vec2(float(x)/30.0, float(y)/30.0);
+  for(int y=0; y<20; y++){
+    for(int x=0; x<20; x++){
+
+
+      vec2 index = vec2(float(x)/20.0, float(y)/20.0);
       vec4 c = texture2D(randomPoints, index);
 
       float newdist = distance(c.xy, uv);
       if(newdist < dist){
+        vec3 tc = texture2D(image0, c.xy).rgb;
         if (dist - newdist < 0.01) {
           float d = dist - newdist;
-          color.rgb = mix(vec3(0.0), tex_color.rgb, d/0.01);
+          color.rgb = mix(vec3(0.0), tc, d/0.01);
         }else{
-          color.rgb = texture2D(image0, c.xy).rgb;
+          color.rgb = tc;
         }
         dist = newdist;
       }
