@@ -108,6 +108,7 @@ function draw() {
   image(shader, 0, 0);
 
   image(randomPoints, 600, 0);
+  //image(FinalGraphics, 0, 0);
 }
 var upperLip = [44, 45, 46, 47, 48, 49, 50, 59, 60, 61, 44];
 var lowerLip = [44, 56, 57, 58, 50, 51, 52, 53, 54, 55, 44];
@@ -178,39 +179,47 @@ void main(void)
   vec2 uv = var_vertTexCoord;
   vec2 st = 2.0*uv - 1.0;
 
-  vec4 color = texture2D(image0, uv);
+  vec4 tex_color = texture2D(image0, uv);
+
+  vec4 color = vec4(1.0);
 
   float dist = 1e10;
   for(int y=0; y<10; y++){
    for(int x=0; x<10; x++){
-      vec2 index = vec2(float(x)/10.0, float(y)/10.0);
-      vec4 c = texture2D(randomPoints, index);
-      float newdist = distance(c.xy, uv);
+    vec2 index = vec2(float(x)/10.0, float(y)/10.0);
+    vec4 c = texture2D(randomPoints, index);
+
+    float newdist = distance(c.xy, uv);
+    if(newdist < dist){
       if (dist - newdist < 0.01) {
         float d = dist - newdist;
-        color.rgb = mix(vec3(0.0), color.rgb, d/0.01);
+        color.rgb = mix(vec3(0.0), tex_color.rgb, d/0.01);
+      }else{
+        color.rgb = tex_color.rgb;
       }
       dist = newdist;
-   }
- }
-
-
-  /*
-  float newdist = distance(verts[i], coord);
-  if (newdist < dist) {
-    if (dist - newdist < 0.01) {
-      float d = dist - newdist;
-      color = mix(vec3(0.), colors[i], d/0.01);
     }
-    else {
-      color = colors[i];
-    }
-    dist = newdist;
+
   }
-  */
+}
+
+
+/*
+float newdist = distance(verts[i], coord);
+if (newdist < dist) {
+  if (dist - newdist < 0.01) {
+    float d = dist - newdist;
+    color = mix(vec3(0.), colors[i], d/0.01);
+  }
+  else {
+    color = colors[i];
+  }
+  dist = newdist;
+}
+*/
 
 
 
-  gl_FragColor = color;
+gl_FragColor = color;
 
 }`;
