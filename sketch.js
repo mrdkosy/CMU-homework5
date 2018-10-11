@@ -5,7 +5,7 @@ var shader, program, randomPoints;
 var realColorImage;
 
 function setup() {
-  //Graphics = createGraphics(800, 600);
+  
 
   // setup camera capture
   videoInput = createCapture();
@@ -33,7 +33,7 @@ function setup() {
   program = shader.createShader(vert, frag);
   shader.noStroke();
   //voronoiのポイントとなる点
-  randomPoints = createGraphics(10, 10);
+  randomPoints = createGraphics(30, 30);
   randomPoints.noStroke();
   randomPoints.fill(255, 0, 0);
   randomPoints.rect(0, 0, randomPoints.width, randomPoints.height);
@@ -58,6 +58,8 @@ function draw() {
   //口の色を取得
   image(videoInput, 0, 0, 800, 600);
   realColorImage = get();
+
+  
 
 
   //モノクロイメージ
@@ -172,7 +174,6 @@ uniform float time;
 uniform sampler2D image0;
 uniform sampler2D randomPoints;
 
-
 void main(void)
 {
 
@@ -184,42 +185,23 @@ void main(void)
   vec4 color = vec4(1.0);
 
   float dist = 1e10;
-  for(int y=0; y<10; y++){
-   for(int x=0; x<10; x++){
-    vec2 index = vec2(float(x)/10.0, float(y)/10.0);
-    vec4 c = texture2D(randomPoints, index);
+  for(int y=0; y<30; y++){
+    for(int x=0; x<30; x++){
+      vec2 index = vec2(float(x)/30.0, float(y)/30.0);
+      vec4 c = texture2D(randomPoints, index);
 
-    float newdist = distance(c.xy, uv);
-    if(newdist < dist){
-      if (dist - newdist < 0.01) {
-        float d = dist - newdist;
-        color.rgb = mix(vec3(0.0), tex_color.rgb, d/0.01);
-      }else{
-        color.rgb = tex_color.rgb;
+      float newdist = distance(c.xy, uv);
+      if(newdist < dist){
+        if (dist - newdist < 0.01) {
+          float d = dist - newdist;
+          color.rgb = mix(vec3(0.0), tex_color.rgb, d/0.01);
+        }else{
+          color.rgb = texture2D(image0, c.xy).rgb;
+        }
+        dist = newdist;
       }
-      dist = newdist;
     }
-
   }
-}
-
-
-/*
-float newdist = distance(verts[i], coord);
-if (newdist < dist) {
-  if (dist - newdist < 0.01) {
-    float d = dist - newdist;
-    color = mix(vec3(0.), colors[i], d/0.01);
-  }
-  else {
-    color = colors[i];
-  }
-  dist = newdist;
-}
-*/
-
-
-
-gl_FragColor = color;
+  gl_FragColor = color;
 
 }`;
