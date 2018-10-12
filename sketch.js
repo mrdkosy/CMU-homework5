@@ -1,13 +1,12 @@
 var ctracker;
 var videoInput;
 var Graphics, FinalGraphics;
-var shader, program, randomPoints, fade, nosePoint;
-var realColorImage;
+var shader, program, randomPoints, fade;
 
 var slider;
 
 function setup() {
-  
+
 
   // setup camera capture
   videoInput = createCapture();
@@ -35,7 +34,7 @@ function setup() {
   program = shader.createShader(vert, frag);
   shader.noStroke();
   //voronoiのポイントとなる点
-  randomPoints = createGraphics(20, 20);
+  randomPoints = createGraphics(30, 30);
   randomPoints.noStroke();
   randomPoints.fill(255, 0, 0);
   randomPoints.rect(0, 0, randomPoints.width, randomPoints.height);
@@ -50,10 +49,10 @@ function setup() {
     randomPoints.pixels[i + 3] = 255;
   }
   randomPoints.updatePixels();
-  nosePoint = createVector(0,0);
+
 
   //slider 
-  slider = createSlider(0, 100, 0);
+  slider = createSlider(0, 100, 70);
   slider.position(650, 20);
 }
 
@@ -62,8 +61,7 @@ function draw() {
   var positions = ctracker.getCurrentPosition();  
 
   //口の色を取得
-  image(videoInput, 0, 0, 800, 600);
-  realColorImage = get();
+  image(videoInput, 600, 0, 800, 600);
 
   
 
@@ -71,7 +69,6 @@ function draw() {
   //モノクロイメージ
   Graphics.image(videoInput, 0, 0, 800, 600);
   Graphics.filter('GRAY');
-  image(realColorImage, 600, 0); 
 
   
   //上唇
@@ -113,16 +110,84 @@ function draw() {
   program.setUniform('randomPoints', randomPoints);
   fade = slider.value()/100;
   program.setUniform('fade', fade);
-  program.setUniform('nodePoint'[nosePoint.x, nosePoint.y]);
   shader.rect(-shader.width/2 ,-shader.height/2, shader.width, shader.height);
 
   image(shader, 0, 0);
 
+  //顔を表示
+  if(fade > 0){
+    noFill();
+    stroke(255);
+    push();
+    translate(-100, 0);
+
+
+    //口
+    beginShape();
+    for(var i=0; i<=upperLip.length; i++){
+      if(upperLip[i] < positions.length){
+        var index = upperLip[i];
+        curveVertex(positions[index][0], positions[index][1]);      
+        if(i == 0 || i == upperLip.length-1) curveVertex(positions[index][0], positions[index][1]);      
+      }
+    }
+    endShape();
+    beginShape();
+    for(var i=0; i<=lowerLip.length; i++){
+      if(lowerLip[i] < positions.length){
+        var index = lowerLip[i];
+        curveVertex(positions[index][0], positions[index][1]);      
+        if(i == 0 || i == lowerLip.length-1) curveVertex(positions[index][0], positions[index][1]);      
+      }
+    }
+    endShape();
+
+    //目
+    beginShape();
+    for(var i=0; i<=rightEye.length; i++){
+      if(rightEye[i] < positions.length){
+        var index = rightEye[i];
+        curveVertex(positions[index][0], positions[index][1]);      
+        if(i == 0 || i == rightEye.length-1) curveVertex(positions[index][0], positions[index][1]);      
+      }
+    }
+    endShape();
+    beginShape();
+    for(var i=0; i<=leftEye.length; i++){
+      if(leftEye[i] < positions.length){
+        var index = leftEye[i];
+        curveVertex(positions[index][0], positions[index][1]);      
+        if(i == 0 || i == leftEye.length-1) curveVertex(positions[index][0], positions[index][1]);      
+      }
+    }
+    endShape();
+
+    //鼻
+    beginShape();
+    for(var i=0; i<=nose.length; i++){
+      if(nose[i] < positions.length){
+        var index = nose[i];
+        curveVertex(positions[index][0], positions[index][1]);      
+        if(i == 0 || i == nose.length-1) curveVertex(positions[index][0], positions[index][1]);      
+      }
+    }
+    endShape();
+
+
+
+
+    pop();
+  }
+
+
   image(randomPoints, 600, 0);
-  //image(FinalGraphics, 0, 0);
+ //image(FinalGraphics, 0, 0);
 }
 var upperLip = [44, 45, 46, 47, 48, 49, 50, 59, 60, 61, 44];
 var lowerLip = [44, 56, 57, 58, 50, 51, 52, 53, 54, 55, 44];
+var nose = [33, 41, 62, 34, 35, 36, 42, 37, 43, 38, 39, 40];
+var rightEye = [23, 63, 24, 64, 25, 65, 26, 66, 23];
+var leftEye = [30, 68, 29, 67, 28, 70, 31, 69, 30];
 
 /* メモ
 後から実装するもの
@@ -181,7 +246,6 @@ uniform float time;
 uniform sampler2D image0;
 uniform sampler2D randomPoints;
 uniform float fade;
-uniform vec2 nodePoint;
 
 void main(void)
 {
@@ -194,12 +258,15 @@ void main(void)
   vec4 color = vec4(1.0);
 
   float dist = 1e10;
-  for(int y=0; y<20; y++){
-    for(int x=0; x<20; x++){
+  float num = 30.0;
+  
+  for(int y=0; y<30; y++){
+    for(int x=0; x<30; x++){
 
 
-      vec2 index = vec2(float(x)/20.0, float(y)/20.0);
+      vec2 index = vec2(float(x)/num, float(y)/num);
       vec4 c = texture2D(randomPoints, index);
+      float i = float(x+int(num)*y)/(num*num);
 
       float newdist = distance(c.xy, uv);
       if(newdist < dist){
@@ -210,7 +277,13 @@ void main(void)
         }else{
           color.rgb = tc;
         }
+        vec2 nc = c.xy * vec2(2.0) - vec2(1.0);
+        float len = length(nc)/sqrt(2.0);
+        if( len < fade){ 
+          color.rgb = vec3(0.7);//tex_color.rgb;
+        }
         dist = newdist;
+        
       }
     }
   }
