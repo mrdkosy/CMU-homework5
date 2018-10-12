@@ -16,7 +16,7 @@ function setup() {
   
   
   // setup canvas
-  var cnv = createCanvas(1600, 600);
+  var cnv = createCanvas(800, 600);
   cnv.position(0, 0);
 
   // setup tracker
